@@ -29,6 +29,19 @@ paths:
         '401':
           description: Invalid credentials
 
+  /logoout:
+    post:
+      summary: logout of an account
+      operationId: logout
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: Successfully logged out
+        '401':
+          description: User not logged in or invalid token
+
+
   /register:
     post:
       summary: Register a new user
