@@ -1,0 +1,200 @@
+openapi: 3.0.3
+info:
+  title: Tee Time Core API
+  version: 1.0.0
+  description: API for booking, modifying, and managing tee time reservations with user authentication.
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /login:
+    post:
+      summary: User login
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials
+
+  /logoout:
+    post:
+      summary: logout of an account
+      operationId: logout
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: Successfully logged out
+        '401':
+          description: User not logged in or invalid token
+
+
+  /register:
+    post:
+      summary: Register a new user
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Validation error
+
+  /bookings:
+    get:
+      summary: Get all bookings
+      operationId: getAllBookings
+      responses:
+        '200':
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '401':
+          description: Unauthorized access
+
+    post:
+      summary: Create a new booking
+      operationId: createBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+      responses:
+        '201':
+          description: Booking created successfully
+        '401':
+          description: Unauthorized access
+
+    put:
+      summary: Modify an existing booking
+      operationId: modifyBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModifyBookingRequest'
+      responses:
+        '200':
+          description: Booking updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: Booking not found
+        '401':
+          description: Unauthorized access
+
+    delete:
+      summary: Delete a booking
+      operationId: deleteBooking
+      parameters:
+        - name: bookingId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Booking deleted successfully
+        '404':
+          description: Booking not found
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+      required:
+        - username
+        - password
+        - email
+
+    TokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        time:
+          type: string
+          format: date-time
+        course:
+          type: string
+
+    BookingRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        time:
+          type: string
+          format: date-time
+        course:
+          type: string
+      required:
+        - userId
+        - time
+        - course
+
+    ModifyBookingRequest:
+      type: object
+      properties:
+        bookingId:
+          type: string
+        newTime:
+          type: string
+          format: date-time
+        newCourse:
+          type: string
+      required:
+        - bookingId
