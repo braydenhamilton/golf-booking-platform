@@ -1,0 +1,4 @@
+package com.golf.teetimecore.service;
+
+public class JwtService {
+}
