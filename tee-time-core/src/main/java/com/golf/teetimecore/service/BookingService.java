@@ -1,6 +1,7 @@
 package com.golf.teetimecore.service;
 
 import com.golf.teetimecore.entity.Booking;
+import com.golf.teetimecore.exception.ResourceNotFoundException;
 import com.golf.teetimecore.repository.BookingRepository;
 import org.springframework.stereotype.Service;
 
