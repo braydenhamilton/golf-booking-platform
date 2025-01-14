@@ -1,0 +1,271 @@
+openapi: 3.0.3
+info:
+  title: Tee Time core
+  description: API for handling tee time reservations
+  version: 1.0.0
+servers:
+  - url: 'https'
+tags:
+  - name: "teeTime"
+paths:
+  /register:
+    post:
+      tags:
+        - "teeTime"
+      summary: "Register a new user"
+      operationId: "registerUser"
+      requestBody:
+        description: "User object that needs to be added to the system"
+        content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        '201':
+          description: User successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+            description: Invalid input
+        '401':
+            description: Unauthorized, invalid token
+        '409':
+            description: User already exists
+        '500':
+            description: Internal server error
+        default:
+          description: Any error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /login:
+    post:
+      tags:
+        - "teeTime"
+      summary: "Logs user into the system"
+      operationId: "loginUser"
+      requestBody:
+        description: "User credentials"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Login"
+        required: true
+      responses:
+        '200':
+          description: User successfully logged in
+          content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized, invalid credentials
+        '500':
+          description: Internal server error
+        default:
+          description: Any error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /logout:
+    post:
+      tags:
+        - "teeTime"
+      summary: "Logs out current logged in user session"
+      operationId: "logoutUser"
+      responses:
+        '200':
+          description: User successfully logged out
+        '401':
+          description: Unauthorized, invalid token
+        '500':
+          description: Internal server error
+        default:
+          description: Any error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /makeBooking:
+    post:
+      tags:
+        - "teeTime"
+      summary: "Make a booking"
+      operationId: "makeBooking"
+      requestBody:
+        description: "Booking object that needs to be added to the system"
+        content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        required: true
+      responses:
+        '201':
+          description: Booking successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+            description: Invalid input
+        '401':
+            description: Unauthorized, invalid token
+        '500':
+            description: Internal server error
+        default:
+          description: Any error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /getBookings:
+    get:
+      tags:
+        - "teeTime"
+      summary: "Get all bookings"
+      operationId: "getBookings"
+      responses:
+        '200':
+          description: Bookings successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '401':
+          description: Unauthorized, invalid token
+        '500':
+          description: Internal server error
+        default:
+          description: Any error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /modifyBooking:
+    put:
+      tags:
+        - "teeTime"
+      summary: "Modify a booking"
+      operationId: "modifyBooking"
+      requestBody:
+        description: "Booking object that needs to be modified"
+        content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        required: true
+      responses:
+        '200':
+          description: Booking successfully modified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+            description: Invalid input
+        '401':
+            description: Unauthorized, invalid token
+        '500':
+            description: Internal server error
+        default:
+          description: Any error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /deleteBooking:
+    delete:
+      tags:
+        - "teeTime"
+      summary: "Delete a booking"
+      operationId: "deleteBooking"
+      requestBody:
+        description: "Booking object that needs to be deleted"
+        content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        required: true
+      responses:
+        '200':
+          description: Booking successfully deleted
+        '400':
+            description: Invalid input
+        '401':
+            description: Unauthorized, invalid token
+        '500':
+            description: Internal server error
+        default:
+          description: Any error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+    schemas:
+      User:
+        type: object
+        required:
+          - username
+          - password
+          - email
+        properties:
+          username:
+            type: string
+          password:
+            type: string
+          email:
+            type: string
+      Login:
+        type: object
+        required:
+          - username
+          - password
+        properties:
+          username:
+            type: string
+          password:
+            type: string
+      Booking:
+        type: object
+        required:
+          - date
+          - time
+          - course
+          - players
+        properties:
+          date:
+            type: string
+            format: date
+          time:
+            type: string
+            format: time
+          course:
+            type: string
+          players:
+            type: integer
+      Error:
+        type: object
+        required:
+          - code
+          - message
+        properties:
+            code:
+              type: integer
+              format: int32
+            message:
+              type: string
+
+
+
+
+
