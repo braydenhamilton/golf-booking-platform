@@ -19,7 +19,7 @@ paths:
         content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/NewUserConfiguration"
         required: true
       responses:
         '201':
@@ -53,7 +53,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Login"
+              $ref: "#/components/schemas/LoginConfiguration"
         required: true
       responses:
         '200':
@@ -104,7 +104,7 @@ paths:
         content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Booking"
+                $ref: "#/components/schemas/BookingConfiguration"
         required: true
       responses:
         '201':
@@ -112,7 +112,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Booking'
+                $ref: '#/components/schemas/BookingConfiguration'
         '400':
             description: Invalid input
         '401':
@@ -139,7 +139,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Booking'
+                  $ref: '#/components/schemas/BookingConfiguration'
         '401':
           description: Unauthorized, invalid token
         '500':
@@ -161,7 +161,7 @@ paths:
         content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Booking"
+                $ref: "#/components/schemas/BookingConfiguration"
         required: true
       responses:
         '200':
@@ -169,7 +169,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Booking'
+                $ref: '#/components/schemas/BookingConfiguration'
         '400':
             description: Invalid input
         '401':
@@ -193,7 +193,7 @@ paths:
         content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Booking"
+                $ref: "#/components/schemas/BookingConfiguration"
         required: true
       responses:
         '200':
@@ -212,6 +212,23 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
     schemas:
+      NewUserConfiguration:
+          type: object
+          required:
+          - username
+          - password
+          - email
+          properties:
+            username:
+              type: string
+            password:
+              type: string
+            email:
+              type: string
+            membershipNumber:
+              type: integer
+            golfPassword:
+              type: string
       User:
         type: object
         required:
@@ -225,7 +242,7 @@ components:
             type: string
           email:
             type: string
-      Login:
+      LoginConfiguration:
         type: object
         required:
           - username
@@ -235,7 +252,7 @@ components:
             type: string
           password:
             type: string
-      Booking:
+      BookingConfiguration:
         type: object
         required:
           - date
