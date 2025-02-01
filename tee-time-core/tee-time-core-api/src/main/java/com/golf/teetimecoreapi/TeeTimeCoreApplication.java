@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class TeeTimeCoreApiApplication {
+public class TeeTimeCoreApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(TeeTimeCoreApiApplication.class, args);
+		SpringApplication.run(TeeTimeCoreApplication.class, args);
 	}
 
 }

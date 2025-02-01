@@ -75,7 +75,7 @@ public class BookingResource implements BookingApi {
             WebElement courseRow = selectedCourse.findElement(By.xpath("./ancestor::tr"));
 
             // Date finding
-            WebElement dateCell = findDateCell(driver, wait, date);
+            WebElement dateCell = findDateCell(driver, wait, courseRow, date);
             if (dateCell != null) {
                 dateCell.click();
             } else {
@@ -86,8 +86,26 @@ public class BookingResource implements BookingApi {
             Thread.sleep(2000);  // Wait for navigation to booking sheet
 
             // Locate and book the desired time slot
-            WebElement timeSlot = driver.findElement(By.xpath("//button[@data-time='" + time + "']"));
-            timeSlot.click();
+            WebElement bookingLink = findTimeSlot(driver, wait, time);
+            if (bookingLink != null) {
+                LOGGER.info("Booking link found for time slot: " + time);
+                bookingLink.click();
+            } else {
+                LOGGER.error("Could not find booking link for time slot: " + time);
+                return ResponseEntity.badRequest().build();
+            }
+
+            Thread.sleep(2000);  // Wait for booking to complete
+
+
+            // Submit the booking
+            WebElement submitButton = findSubmitButton(driver, wait);
+            if (submitButton != null) {
+                submitButton.click();
+            } else {
+                LOGGER.error("Could not find submit button for booking");
+                return ResponseEntity.badRequest().build();
+            }
 
             LOGGER.info("Successfully booked time slot: " + time);
 
@@ -104,7 +122,46 @@ public class BookingResource implements BookingApi {
         }
     }
 
-    public WebElement findDateCell(WebDriver driver, WebDriverWait wait, Date date) {
+    public WebElement findSubmitButton(WebDriver driver, WebDriverWait wait) {
+        List<By> locators = Arrays.asList(
+                By.id("MainContent_ContinueButton"),
+                By.xpath("//input[@type='submit' and @value='SUBMIT']"),
+                By.cssSelector("input.module-button-cta.btn.btn-primary"),
+                By.xpath("//input[contains(@class, 'module-button-cta') and contains(@class, 'btn-primary')]"),
+                By.name("ctl00$MainContent$ContinueButton")
+        );
+
+        for (By locator : locators) {
+            try {
+                return wait.until(ExpectedConditions.elementToBeClickable(locator));
+            } catch (TimeoutException e) {
+                LOGGER.error("Could not find submit button with locator: " + locator);
+                continue;
+            }
+        }
+        throw new RuntimeException("Could not find submit button");
+    }
+
+    private WebElement findTimeSlot(WebDriver driver, WebDriverWait wait, String time) {
+        List<By> locators = Arrays.asList(
+                // Find by exact time and "Book Here" link
+                By.xpath(String.format("//td[contains(@class, 'xtime') and text()='%s']/..//a[contains(@class, 'book_here_link')]", time)),
+                // Alternative approach using ancestor
+                By.xpath(String.format("//td[@class='xtime'][text()='%s']/following-sibling::td//a[contains(@class, 'book_here_link')]", time))
+                );
+
+        for (By locator : locators) {
+            try {
+                return wait.until(ExpectedConditions.elementToBeClickable(locator));
+            } catch (TimeoutException e) {
+                LOGGER.error("Could not find time slot with locator: " + locator);
+                continue;
+            }
+        }
+        throw new RuntimeException("Could not find booking link for time: " + time);
+    }
+
+    public WebElement findDateCell(WebDriver driver, WebDriverWait wait, WebElement courseRow, Date date) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String formattedDate = dateFormat.format(date);
 
@@ -114,12 +171,15 @@ public class BookingResource implements BookingApi {
                 By.xpath(String.format("//td[contains(@onclick, '%s')]", formattedDate))
         );
 
-        for (By locator : locators) {
-            try {
-                return wait.until(ExpectedConditions.elementToBeClickable(locator));
-            } catch (TimeoutException e) {
-                LOGGER.error("Could not find date cell with locator: " + locator);
-                continue;
+        List<WebElement> columns = courseRow.findElements(By.tagName("td"));
+        for (WebElement column : columns) {
+            System.out.println(column.getText());
+            for (By locator : locators) {
+                try {
+                    return column.findElement(locator);
+                } catch (TimeoutException e) {
+                    LOGGER.error("Could not find date cell with locator: " + locator);
+                }
             }
         }
         throw new RuntimeException("Could not find available date cell for: " + formattedDate);
