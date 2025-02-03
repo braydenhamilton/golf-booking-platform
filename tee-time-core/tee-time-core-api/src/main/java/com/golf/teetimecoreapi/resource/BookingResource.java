@@ -72,7 +72,7 @@ public class BookingResource implements BookingApi {
             }
 
             // Locate the row containing the selected course
-            WebElement courseRow = selectedCourse.findElement(By.xpath("./ancestor::tr"));
+            WebElement courseRow = selectedCourse.findElement(By.xpath("./parent::td/parent::tr"));
 
             // Date finding
             WebElement dateCell = findDateCell(driver, wait, courseRow, date);
@@ -112,6 +112,17 @@ public class BookingResource implements BookingApi {
             // Handle post-booking logic
             Thread.sleep(2000);  // Wait for booking to complete
 
+            // one more step finalising booking
+            WebElement finaliseButton = findFinaliseButton(driver, wait);
+            if (finaliseButton != null) {
+                finaliseButton.click();
+                Thread.sleep(2000);  // Wait for finalisation to complete
+                LOGGER.info("Successfully finalised booking");
+            } else {
+                LOGGER.error("Could not find finalise button");
+                return ResponseEntity.badRequest().build();
+            }
+
             return ResponseEntity.ok(bookingConfiguration);
 
         } catch (Exception e) {
@@ -120,6 +131,26 @@ public class BookingResource implements BookingApi {
         } finally {
             driver.quit();
         }
+    }
+
+    private WebElement findFinaliseButton(WebDriver driver, WebDriverWait wait) {
+        List<By> locators = Arrays.asList(
+                By.id("MainContent_FinishButton"),
+                By.xpath("//input[@value='FINALISE BOOKING']"),
+                By.cssSelector(".module-button-cta-nzg.btn.btn-primary"),
+                By.name("ctl00$MainContent$FinishButton"),
+                By.xpath("//div[contains(@class, 'alert-info')]//input[@type='submit']")
+        );
+
+        for (By locator : locators) {
+            try {
+                return wait.until(ExpectedConditions.elementToBeClickable(locator));
+            } catch (TimeoutException e) {
+                LOGGER.error("Could not find finalise button with locator: " + locator);
+                continue;
+            }
+        }
+        throw new RuntimeException("Could not find finalise booking button");
     }
 
     public WebElement findSubmitButton(WebDriver driver, WebDriverWait wait) {
@@ -165,24 +196,15 @@ public class BookingResource implements BookingApi {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String formattedDate = dateFormat.format(date);
 
-        List<By> locators = Arrays.asList(
-                By.xpath(String.format("//td[contains(@onmouseover, '%s') and contains(@class, 'available')]", formattedDate)),
-                By.cssSelector(String.format("td.available[onmouseover*='%s']", formattedDate)),
-                By.xpath(String.format("//td[contains(@onclick, '%s')]", formattedDate))
-        );
-
-        List<WebElement> columns = courseRow.findElements(By.tagName("td"));
-        for (WebElement column : columns) {
-            System.out.println(column.getText());
-            for (By locator : locators) {
-                try {
-                    return column.findElement(locator);
-                } catch (TimeoutException e) {
-                    LOGGER.error("Could not find date cell with locator: " + locator);
-                }
-            }
+        try {
+            // Look for available date cells only within the course row
+            return courseRow.findElement(
+                    By.xpath(String.format(".//td[contains(@class, 'available') and contains(@onmouseover, '%s')]", formattedDate))
+            );
+        } catch (Exception e) {
+            LOGGER.error("Could not find date cell for " + formattedDate + " in course row");
+            throw new RuntimeException("Could not find available date cell for: " + formattedDate);
         }
-        throw new RuntimeException("Could not find available date cell for: " + formattedDate);
     }
 
     public WebElement findCourseElement(WebDriver driver, String course) {
