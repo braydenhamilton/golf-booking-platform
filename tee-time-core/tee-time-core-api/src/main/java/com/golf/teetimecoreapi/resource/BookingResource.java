@@ -3,7 +3,9 @@ package com.golf.teetimecoreapi.resource;
 import com.golf.api.BookingApi;
 import com.golf.model.BookingConfiguration;
 import com.golf.model.NewUserConfiguration;
+import com.golf.model.User;
 import com.golf.teetimecoreapi.service.BookingService;
+import com.golf.teetimecoreapi.session.UserSessionStore;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openqa.selenium.By;
@@ -41,6 +43,14 @@ public class BookingResource implements BookingApi {
     public ResponseEntity<BookingConfiguration> makeBooking(@Valid @RequestBody BookingConfiguration bookingConfiguration) {
         LOGGER.info("Received booking request: " + bookingConfiguration);
 
+        User user = UserSessionStore.getUserSession();
+
+        if (user == null) {
+            LOGGER.error("User not logged in");
+            //Unauthorized, invalid credentials
+            return ResponseEntity.status(401).build();
+        }
+
         // Get report parameters
         Date date = bookingConfiguration.getDate();
         String time = bookingConfiguration.getTime();
@@ -55,7 +65,7 @@ public class BookingResource implements BookingApi {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));  // WebDriverWait for element visibility
             System.out.println("Navigated to login page");
 
-            bookingService.nzGolfLogin(driver, wait);
+            bookingService.nzGolfLogin(driver, wait, user);
             Thread.sleep(2000);  // Wait for login to complete
 
             // Navigate to booking page

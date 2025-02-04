@@ -1,5 +1,6 @@
 package com.golf.teetimecoreapi.service;
 
+import com.golf.model.User;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.TimeoutException;
@@ -7,6 +8,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -164,7 +166,7 @@ public class BookingService {
         throw new RuntimeException("Could not find login button");
     }
 
-    public void nzGolfLogin(WebDriver driver, WebDriverWait wait) {
+    public void nzGolfLogin(WebDriver driver, WebDriverWait wait, User user) {
         // Login procedure
         WebElement membershipNumberField = findMembershipNumberField(driver, wait);
         WebElement passwordField = findPasswordField(driver, wait);
@@ -172,8 +174,8 @@ public class BookingService {
 
         // Enter login details
 
-        membershipNumberField.sendKeys("4676144"); // NewUserConfiguration.getMembershipNumber());
-        passwordField.sendKeys("Sard3nia");  //NewUserConfiguration.getGolfPassword()); // *******
+        membershipNumberField.sendKeys(user.getGolfNZMemberId()); // NewUserConfiguration.getMembershipNumber());
+        passwordField.sendKeys(user.getGolfNZPassword());  //NewUserConfiguration.getGolfPassword()); // *******
         loginButton.click();
     }
 

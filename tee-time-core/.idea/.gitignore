@@ -1,0 +1,5 @@
+#default ignored files
+/shelf/
+/workspace.xml
+#editor specific files
+/httpRequests/
