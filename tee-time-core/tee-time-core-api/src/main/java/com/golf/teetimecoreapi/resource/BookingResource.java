@@ -122,6 +122,7 @@ public class BookingResource implements BookingApi {
             Thread.sleep(2000);  // Wait for booking to complete
 
             // one more step finalising booking
+            // may not be required for some courses
             WebElement finaliseButton = bookingService.findFinaliseButton(driver, wait);
             if (finaliseButton != null) {
                 finaliseButton.click();

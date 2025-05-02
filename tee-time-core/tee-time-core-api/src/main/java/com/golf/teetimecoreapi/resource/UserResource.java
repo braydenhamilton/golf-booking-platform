@@ -33,6 +33,11 @@ public class UserResource implements UserApi {
 
         // Execute user registration logic
         UserResponse userResponse = userService.registerNewUser(newUserConfiguration);
+        if (userResponse == null) {
+            LOGGER.error("User registration failed");
+            // Return error response
+            return ResponseEntity.status(400).build();
+        }
 
         return ResponseEntity.status(201).body(userResponse);
     }
