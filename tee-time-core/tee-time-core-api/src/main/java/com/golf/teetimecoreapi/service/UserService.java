@@ -25,6 +25,9 @@ public class UserService {
         user.setGolfNZMemberId(config.getGolfNZMemberId());
         user.setUsername(config.getUsername());
         user.setPassword(config.getPassword()); // Hash before storing in production
+        user.setEmail(config.getEmail());
+        user.setGolfNZPassword(config.getGolfNZPassword());
+
 
         UserEntity savedUser = userRepository.save(user);
         return new UserResponse().golfNZMemberId(savedUser.getGolfNZMemberId()).username(savedUser.getUsername());
