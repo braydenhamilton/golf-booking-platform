@@ -6,7 +6,7 @@ info:
 tags:
   - name: "teeTime"
 paths:
-  /user/register:
+  /user:
     post:
       tags:
         - "teeTime"
@@ -25,7 +25,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserResponse'
         '400':
             description: Invalid input
         '401':
@@ -59,7 +59,7 @@ paths:
           content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/User'
+                  $ref: '#/components/schemas/UserResponse'
         '400':
           description: Invalid input
         '401':
@@ -210,29 +210,11 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
     schemas:
-      NewUserConfiguration:
-          type: object
-          required:
-          - username
-          - password
-          - email
-          properties:
-            username:
-              type: string
-            password:
-              type: string
-            email:
-              type: string
-            membershipNumber:
-              type: string
-            golfPassword:
-              type: string
       User:
         type: object
         required:
           - username
           - password
-          - email
         properties:
           username:
             type: string
@@ -240,16 +222,49 @@ components:
             type: string
           email:
             type: string
+          golfNZMemberId:
+            type: string
+            description: "Golf NZ member ID"
+          golfNZPassword:
+            type: string
+            description: "Golf NZ password"
+      NewUserConfiguration:
+        allOf:
+          - $ref: '#/components/schemas/User'
+          - type: object
+            required:
+            - email
+            - golfNZMemberId
+            - golfNZPassword
+            properties:
+              email:
+                type: string
+              golfNZMemberId:
+                type: string
+              golfNZPassword:
+                type: string
       LoginConfiguration:
+        $ref: '#/components/schemas/User'
+      UserResponse:
         type: object
         required:
+          - id
           - username
-          - password
+          - email
+          - golfNZMemberId
         properties:
+          id:
+            type: string
           username:
             type: string
-          password:
+          email:
             type: string
+          golfNZMemberId:
+            type: string
+            description: "Golf NZ member ID"
+          createdAt:
+            type: string
+            format: date-time
       BookingConfiguration:
         type: object
         required:
