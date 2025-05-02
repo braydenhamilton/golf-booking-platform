@@ -2,11 +2,11 @@ package com.golf.teetimecoreapi.session;
 
 import com.golf.model.User;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
 public class UserSessionStore {
-    private static final Map<String, User> userSessions = new HashMap<>();
+    private static final Map<String, User> userSessions = new ConcurrentHashMap<>();
 
     public static void addUserSession(User user) {
         userSessions.put(user.getGolfNZMemberId(), user);
