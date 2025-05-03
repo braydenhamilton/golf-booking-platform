@@ -38,6 +38,7 @@ public class BookingScheduler {
                 }
 
             } catch (Exception ex) {
+                logger.error("Error processing booking request with ID {}: {}", req.getId(), ex.getMessage(), ex);
                 req.setRetryCount(req.getRetryCount() + 1);
                 req.setStatus("RETRYING");
                 // Optionally add backoff logic
