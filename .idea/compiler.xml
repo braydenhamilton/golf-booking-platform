@@ -10,6 +10,15 @@
         <module name="tee-time-core-client" />
         <module name="tee-time-core-api" />
       </profile>
+      <profile name="Annotation profile for tee-time-scheduler" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
+        </processorPath>
+        <module name="tee-time-scheduler" />
+      </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
@@ -17,6 +26,7 @@
       <module name="tee-time-core" options="" />
       <module name="tee-time-core-api" options="-parameters" />
       <module name="tee-time-core-client" options="-parameters" />
+      <module name="tee-time-scheduler" options="-parameters" />
     </option>
   </component>
 </project>
