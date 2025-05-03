@@ -6,6 +6,7 @@
 
 # Inteelj
 out/
+.idea/
 
 # BlueJ files
 *.ctxt
