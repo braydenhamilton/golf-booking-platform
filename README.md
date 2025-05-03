@@ -1,9 +1,4 @@
 # Golf Booking Platform
-
-[![Build Status](https://github.com/your-org/golf-booking/workflows/CI/badge.svg)](https://github.com/your-org/golf-booking/actions)
-[![Coverage](https://codecov.io/gh/your-org/golf-booking/branch/main/graph/badge.svg)](https://codecov.io/gh/your-org/golf-booking)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
 ## Overview
 
 The Golf Booking Platform is an automated tee time reservation system designed to help golfers secure highly competitive tee times at popular golf courses. The platform handles the entire booking process from user registration to automated booking execution at precisely the right moment when tee times become available.
@@ -53,6 +48,7 @@ The platform consists of three main services:
 - Java 17+
 - Node.js 18+
 - PostgreSQL 14+
+- Supabase
 - Docker (optional)
 
 ### Local Development Setup
@@ -61,7 +57,7 @@ The platform consists of three main services:
 git clone https://github.com/your-org/golf-booking.git
 
 # Start databases
-docker-compose up -d postgres
+docker-compose up -d postgres # using supabase so no need to start postgres
 
 # Start Core API
 cd tee-time-core
@@ -96,9 +92,12 @@ The Tee Time Core service is a Java Springboot application using the Spring fram
 **Request Body:**
 ```json
 {
-  "username": "string",
-  "password": "string",
-  "email": "string"
+   "username": "string",
+   "password": "string",
+   "email": "string",
+   "golfNZMemberId": "string",
+   "golfNZPassword": "string"
+   
 }
 ```
 
@@ -225,185 +224,6 @@ The Tee Time Scheduler Service is a Spring-based scheduling service that execute
 
 ### Key Components
 
-#### Scheduled Booking Request
-```json
-{
-  "id": "UUID",
-  "targetBookingTime": "YYYY-MM-DD HH:mm:ss",
-  "bookingDetails": {
-    "date": "YYYY-MM-DD",
-    "time": "HH:mm",
-    "course": "string",
-    "players": "integer"
-  },
-  "userId": "string",
-  "status": "PENDING | IN_PROGRESS | COMPLETED | FAILED",
-  "attempts": "integer",
-  "createdAt": "YYYY-MM-DD HH:mm:ss"
-}
-```
-
-### Database Schema
-```sql
-CREATE TABLE scheduled_bookings (
-    id UUID PRIMARY KEY,
-    target_booking_time TIMESTAMP WITH TIME ZONE,
-    desired_date DATE,
-    desired_time TIME,
-    course_id VARCHAR(50),
-    players INTEGER,
-    user_id VARCHAR(50),
-    status VARCHAR(20),
-    attempts INTEGER DEFAULT 0,
-    created_at TIMESTAMP,
-    last_attempted_at TIMESTAMP,
-    completed_at TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-```
-
-### Implementation
-
-#### Scheduler Service
-```java
-@Service
-@Slf4j
-public class TeeTimeSchedulerService {
-    
-    private final TeeTimeApiClient apiClient;
-    private final ScheduledBookingRepository repository;
-    
-    @Autowired
-    public TeeTimeSchedulerService(TeeTimeApiClient apiClient, 
-                                 ScheduledBookingRepository repository) {
-        this.apiClient = apiClient;
-        this.repository = repository;
-    }
-    
-    @Scheduled(fixedRate = 1000) // Check every second
-    public void processScheduledBookings() {
-        LocalDateTime now = LocalDateTime.now();
-        List<ScheduledBooking> upcomingBookings = repository
-            .findByStatusAndTargetBookingTimeBetween(
-                BookingStatus.PENDING,
-                now,
-                now.plusSeconds(5)
-            );
-            
-        upcomingBookings.forEach(this::executeBooking);
-    }
-    
-    @Async
-    public void executeBooking(ScheduledBooking booking) {
-        try {
-            log.info("Attempting booking for user {} at course {}", 
-                     booking.getUserId(), booking.getCourseId());
-                     
-            BookingRequest request = BookingRequest.builder()
-                .date(booking.getDesiredDate())
-                .time(booking.getDesiredTime())
-                .course(booking.getCourseId())
-                .players(booking.getPlayers())
-                .build();
-                
-            ApiResponse response = apiClient.makeBooking(request);
-            
-            if (response.isSuccess()) {
-                updateBookingStatus(booking, BookingStatus.COMPLETED);
-                notifySuccess(booking);
-            } else {
-                handleFailedBooking(booking);
-            }
-        } catch (Exception e) {
-            log.error("Booking attempt failed", e);
-            handleFailedBooking(booking);
-        }
-    }
-    
-    private void handleFailedBooking(ScheduledBooking booking) {
-        if (booking.getAttempts() < maxRetryAttempts) {
-            booking.setAttempts(booking.getAttempts() + 1);
-            booking.setStatus(BookingStatus.PENDING);
-            repository.save(booking);
-        } else {
-            updateBookingStatus(booking, BookingStatus.FAILED);
-            notifyFailure(booking);
-        }
-    }
-}
-```
-
-#### API Client
-```java
-@Component
-public class TeeTimeApiClient {
-    
-    private final WebClient webClient;
-    
-    public TeeTimeApiClient(@Value("${api.base-url}") String baseUrl) {
-        this.webClient = WebClient.builder()
-            .baseUrl(baseUrl)
-            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .build();
-    }
-    
-    public ApiResponse makeBooking(BookingRequest request) {
-        return webClient.post()
-            .uri("/makeBooking")
-            .bodyValue(request)
-            .retrieve()
-            .bodyToMono(ApiResponse.class)
-            .block();
-    }
-}
-```
-
-### Configuration
-
-```yaml
-scheduler:
-  retry:
-    max-attempts: 3
-    delay-ms: 1000
-  
-api:
-  base-url: "http://localhost:8080"
-  timeout-ms: 5000
-  
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/teetime
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-```
-
-### Usage Example
-
-To schedule a booking attempt:
-
-```java
-@RestController
-@RequestMapping("/scheduler")
-public class SchedulerController {
-    
-    private final ScheduledBookingRepository repository;
-    
-    @PostMapping("/schedule")
-    public ResponseEntity<ScheduledBooking> scheduleBooking(@RequestBody ScheduleRequest request) {
-        ScheduledBooking booking = ScheduledBooking.builder()
-            .targetBookingTime(request.getTargetTime())
-            .desiredDate(request.getDesiredDate())
-            .desiredTime(request.getDesiredTime())
-            .courseId(request.getCourseId())
-            .players(request.getPlayers())
-            .userId(request.getUserId())
-            .status(BookingStatus.PENDING)
-            .build();
-            
-        return ResponseEntity.ok(repository.save(booking));
-    }
-}
-```
 
 ### Error Handling
 
@@ -501,100 +321,6 @@ src/
 - Course release time information
 - Historical booking success rates
 
-### Component Examples
-
-#### Booking Calendar
-```typescript
-interface BookingCalendarProps {
-  selectedDate: Date;
-  availableDates: Date[];
-  onDateSelect: (date: Date) => void;
-}
-
-const BookingCalendar: React.FC<BookingCalendarProps> = ({
-  selectedDate,
-  availableDates,
-  onDateSelect,
-}) => {
-  // Calendar implementation
-};
-```
-
-#### Course Selector
-```typescript
-interface Course {
-  id: string;
-  name: string;
-  location: string;
-  releaseTimeInfo: string;
-}
-
-interface CourseSelectorProps {
-  courses: Course[];
-  selectedCourse: Course | null;
-  onCourseSelect: (course: Course) => void;
-}
-
-const CourseSelector: React.FC<CourseSelectorProps> = ({
-  courses,
-  selectedCourse,
-  onCourseSelect,
-}) => {
-  // Course selector implementation
-};
-```
-
-### State Management
-
-#### Store Structure
-```typescript
-interface RootState {
-  auth: {
-    user: User | null;
-    token: string | null;
-    loading: boolean;
-  };
-  booking: {
-    selectedDate: Date | null;
-    selectedCourse: Course | null;
-    selectedTime: string | null;
-    playerCount: number;
-  };
-  scheduler: {
-    scheduledBookings: ScheduledBooking[];
-    loading: boolean;
-    error: string | null;
-  };
-}
-```
-
-### API Integration
-
-#### API Client Setup
-```typescript
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  timeout: 10000,
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-```
-
-### Environment Configuration
-```env
-VITE_API_URL=http://localhost:8080
-VITE_SCHEDULER_URL=http://localhost:8081
-VITE_ENABLE_MOCKS=false
-VITE_DEBUG_MODE=false
-```
 
 ### Development Setup
 
@@ -662,25 +388,17 @@ npm run dev
 5. Bundle generation
 
 #### CI/CD Pipeline
-```yaml
-name: Frontend CI
 
-on:
-  push:
-    paths:
-      - 'frontend/**'
+The CI/CD pipeline is yet to be implemented.
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run test
-      - run: npm run build
-```
+The CI/CD pipeline is configured to automatically build and deploy the application on every commit to the main branch. The pipeline includes:
+- Linting
+- Unit tests
+- Integration tests
+- E2E tests
+- Build artifacts generation
+- Deployment to staging/production environments
+- Monitoring and alerting
 
 ### Performance Optimization
 
