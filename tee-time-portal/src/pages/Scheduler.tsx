@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../store';
+import type { RootState } from '../store';
 import { addScheduledBooking } from '../store/slices/schedulerSlice';
 
 const Scheduler = () => {
