@@ -3,6 +3,8 @@ package com.golf.teetimescheduler.service;
 import com.golf.teetimescheduler.model.BookingRequest;
 import com.golf.teetimescheduler.repository.BookingRequestRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class BookingScheduler {
+    private static final Logger logger = LoggerFactory.getLogger(BookingScheduler.class);
 
     private final BookingRequestRepository repository;
     private final RestTemplate restTemplate = new RestTemplate();
