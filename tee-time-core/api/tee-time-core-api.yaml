@@ -265,6 +265,9 @@ components:
           createdAt:
             type: string
             format: date-time
+          token:
+            type: string
+            description: "JWT authentication token"
       BookingConfiguration:
         type: object
         required:

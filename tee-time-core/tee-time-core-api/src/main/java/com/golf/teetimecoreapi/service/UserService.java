@@ -5,10 +5,15 @@ import com.golf.model.User;
 import com.golf.model.UserResponse;
 import com.golf.teetimecoreapi.model.UserEntity;
 import com.golf.teetimecoreapi.repository.UserRepository;
-import com.golf.teetimecoreapi.session.UserSessionStore;
+import com.golf.teetimecoreapi.security.JwtTokenUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -20,31 +25,45 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
+
     public UserResponse registerNewUser(NewUserConfiguration config) {
         UserEntity user = new UserEntity();
         user.setGolfNZMemberId(config.getGolfNZMemberId());
         user.setUsername(config.getUsername());
-        user.setPassword(config.getPassword()); // Hash before storing in production
+        user.setPassword(passwordEncoder.encode(config.getPassword()));
         user.setEmail(config.getEmail());
         user.setGolfNZPassword(config.getGolfNZPassword());
 
-
         UserEntity savedUser = userRepository.save(user);
-        return new UserResponse().golfNZMemberId(savedUser.getGolfNZMemberId()).username(savedUser.getUsername());
+        return new UserResponse()
+                .golfNZMemberId(savedUser.getGolfNZMemberId())
+                .username(savedUser.getUsername());
     }
 
     public UserResponse loginUser(User user) {
-        Optional<UserEntity> found = userRepository.findByGolfNZMemberId(user.getGolfNZMemberId());
-        if (found.isPresent() && found.get().getPassword().equals(user.getPassword())) {
-            // Add to session store
-            UserSessionStore.addUserSession(user);
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(user.getGolfNZMemberId(), user.getPassword())
+        );
 
-            return new UserResponse().golfNZMemberId(user.getGolfNZMemberId()).username(user.getUsername());
-        }
-        throw new RuntimeException("Invalid credentials");
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String jwt = jwtTokenUtil.generateToken(userDetails);
+
+        return new UserResponse()
+                .golfNZMemberId(user.getGolfNZMemberId())
+                .username(user.getUsername())
+                .token(jwt);
     }
 
     public void logoutUser() {
-        // For simplicity, remove all sessions or use user-specific logout logic
+        SecurityContextHolder.clearContext();
     }
 }
