@@ -34,7 +34,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable()
             .authorizeRequests()
-            .antMatchers("/api/auth/**").permitAll()
+            .antMatchers("/api/auth/**", "/user", "/user/login", "user/logout").permitAll() // allow public access to these endpoints
+            .antMatchers("/booking/makeBooking").authenticated() // requires authentication
             .anyRequest().authenticated()
             .and()
             .sessionManagement()

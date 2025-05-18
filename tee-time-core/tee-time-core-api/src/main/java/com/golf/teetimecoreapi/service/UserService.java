@@ -50,16 +50,21 @@ public class UserService {
 
     public UserResponse loginUser(User user) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(user.getGolfNZMemberId(), user.getPassword())
+                new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwt = jwtTokenUtil.generateToken(userDetails);
 
+        // Get the actual user entity to return complete user info
+        UserEntity userEntity = userRepository.findByUsername(user.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found after authentication"));
+
         return new UserResponse()
-                .golfNZMemberId(user.getGolfNZMemberId())
-                .username(user.getUsername())
+                .golfNZMemberId(userEntity.getGolfNZMemberId())
+                .username(userEntity.getUsername())
+                .email(userEntity.getEmail())
                 .token(jwt);
     }
 
