@@ -1,6 +1,8 @@
 package com.golf.teetimecoreapi.service;
 
 import com.golf.model.User;
+import com.golf.teetimecoreapi.model.UserEntity;
+import com.golf.teetimecoreapi.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.TimeoutException;
@@ -9,6 +11,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -23,6 +26,29 @@ import java.util.List;
 public class BookingService {
 
     public static final Log LOGGER = LogFactory.getLog(BookingService.class);
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .map(this::convertToUser)
+                .orElse(null);
+    }
+
+    private User convertToUser(UserEntity entity) {
+        User user = new User();
+        user.setUsername(entity.getUsername());
+        user.setGolfNZMemberId(entity.getGolfNZMemberId());
+        user.setGolfNZPassword(entity.getGolfNZPassword());
+        return user;
+    }
 
     public WebElement findFinaliseButton(WebDriver driver, WebDriverWait wait) {
         List<By> locators = Arrays.asList(
@@ -98,15 +124,15 @@ public class BookingService {
         }
     }
 
-    public WebElement findCourseElement(WebDriver driver, String course) {
-        List<WebElement> courseElements = driver.findElements(By.cssSelector(".club_info.course-name span"));
-        for (WebElement courseElement : courseElements) {
-            if (courseElement.getText().equalsIgnoreCase(course)) {
-                return courseElement;
-            }
-        }
-        return null;
-    }
+   public WebElement findCourseElement(WebDriver driver, String course) {
+       List<WebElement> courseElements = driver.findElements(By.cssSelector(".club_info.course-name span"));
+       for (WebElement courseElement : courseElements) {
+           if (courseElement.getText().equalsIgnoreCase(course)) {
+               return courseElement;
+           }
+       }
+       return null;
+   }
 
     public WebElement findMembershipNumberField(WebDriver driver, WebDriverWait wait) {
         List<By> locators = Arrays.asList(
@@ -167,15 +193,17 @@ public class BookingService {
     }
 
     public void nzGolfLogin(WebDriver driver, WebDriverWait wait, User user) {
+        // Decrypt the GolfNZ password
+        String password = userService.decrypt(user.getGolfNZPassword());
+        
         // Login procedure
         WebElement membershipNumberField = findMembershipNumberField(driver, wait);
         WebElement passwordField = findPasswordField(driver, wait);
         WebElement loginButton = findLoginButton(driver, wait);
 
         // Enter login details
-
-        membershipNumberField.sendKeys(user.getGolfNZMemberId()); // NewUserConfiguration.getMembershipNumber());
-        passwordField.sendKeys(user.getGolfNZPassword());  //NewUserConfiguration.getGolfPassword()); // *******
+        membershipNumberField.sendKeys(user.getGolfNZMemberId());
+        passwordField.sendKeys(password);
         loginButton.click();
     }
 

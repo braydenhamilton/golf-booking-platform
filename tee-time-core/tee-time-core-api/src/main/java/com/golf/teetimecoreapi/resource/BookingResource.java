@@ -2,21 +2,23 @@ package com.golf.teetimecoreapi.resource;
 
 import com.golf.api.BookingApi;
 import com.golf.model.BookingConfiguration;
-import com.golf.model.NewUserConfiguration;
 import com.golf.model.User;
 import com.golf.teetimecoreapi.service.BookingService;
-import com.golf.teetimecoreapi.session.UserSessionStore;
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openqa.selenium.By;
-import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,11 +45,17 @@ public class BookingResource implements BookingApi {
     public ResponseEntity<BookingConfiguration> makeBooking(@Valid @RequestBody BookingConfiguration bookingConfiguration) {
         LOGGER.info("Received booking request: " + bookingConfiguration);
 
-        User user = UserSessionStore.getUserSession();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            LOGGER.error("User not authenticated");
+            return ResponseEntity.status(401).build();
+        }
 
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        // Get the actual user entity to access GolfNZ credentials
+        User user = bookingService.getUserByUsername(userDetails.getUsername());
         if (user == null) {
-            LOGGER.error("User not logged in");
-            //Unauthorized, invalid credentials
+            LOGGER.error("User not found");
             return ResponseEntity.status(401).build();
         }
 
@@ -67,10 +75,12 @@ public class BookingResource implements BookingApi {
 
             bookingService.nzGolfLogin(driver, wait, user);
             Thread.sleep(2000);  // Wait for login to complete
+            System.out.println("Logged in successfully");
 
             // Navigate to booking page
             driver.get("https://www.golf.co.nz/Teebooking/SearchClubDay.aspx");
             Thread.sleep(2000);  // Wait for the page to load
+            System.out.println("Navigated to booking page");
 
             // Find the course by name
             WebElement selectedCourse = bookingService.findCourseElement(driver, course);
@@ -129,8 +139,7 @@ public class BookingResource implements BookingApi {
                 Thread.sleep(2000);  // Wait for finalisation to complete
                 LOGGER.info("Successfully finalised booking");
             } else {
-                LOGGER.error("Could not find finalise button");
-                return ResponseEntity.badRequest().build();
+                LOGGER.warn("Finalise button not found, proceeding without finalisation");
             }
 
             return ResponseEntity.ok(bookingConfiguration);
@@ -144,7 +153,8 @@ public class BookingResource implements BookingApi {
     }
 
     private WebDriver initialiseWebDriver() {
-        System.setProperty("webdriver.chrome.driver", "C:/chromedriver/chromedriver-win64/chromedriver.exe"); // Update the path
-        return new ChromeDriver();
+        WebDriverManager.chromedriver().setup();
+        ChromeOptions options = new ChromeOptions();
+        return new ChromeDriver(options);
     }
 }
