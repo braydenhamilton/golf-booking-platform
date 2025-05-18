@@ -35,12 +35,22 @@ public class UserService {
     private JwtTokenUtil jwtTokenUtil;
 
     public UserResponse registerNewUser(NewUserConfiguration config) {
+        // Check if user already exists with this GolfNZ member ID
+        if (userRepository.findByGolfNZMemberId(config.getGolfNZMemberId()).isPresent()) {
+            throw new RuntimeException("User with GolfNZ member ID " + config.getGolfNZMemberId() + " already exists");
+        }
+
+        // Check if username is already taken
+        if (userRepository.findByUsername(config.getUsername()).isPresent()) {
+            throw new RuntimeException("Username " + config.getUsername() + " is already taken");
+        }
+
         UserEntity user = new UserEntity();
         user.setGolfNZMemberId(config.getGolfNZMemberId());
         user.setUsername(config.getUsername());
         user.setPassword(passwordEncoder.encode(config.getPassword()));
         user.setEmail(config.getEmail());
-        user.setGolfNZPassword(config.getGolfNZPassword());
+        user.setGolfNZPassword(passwordEncoder.encode(config.getGolfNZPassword()));
 
         UserEntity savedUser = userRepository.save(user);
         return new UserResponse()

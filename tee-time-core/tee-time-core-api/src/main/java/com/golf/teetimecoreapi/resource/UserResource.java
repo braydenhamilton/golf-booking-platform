@@ -31,15 +31,17 @@ public class UserResource implements UserApi {
     public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody NewUserConfiguration newUserConfiguration) {
         LOGGER.info("Received user registration request: " + newUserConfiguration);
 
-        // Execute user registration logic
-        UserResponse userResponse = userService.registerNewUser(newUserConfiguration);
-        if (userResponse == null) {
-            LOGGER.error("User registration failed");
-            // Return error response
-            return ResponseEntity.status(400).build();
+        try {
+            // Execute user registration logic
+            UserResponse userResponse = userService.registerNewUser(newUserConfiguration);
+            return ResponseEntity.status(201).body(userResponse);
+        } catch (RuntimeException e) {
+            LOGGER.error("User registration failed: " + e.getMessage());
+            if (e.getMessage().contains("already exists") || e.getMessage().contains("already taken")) {
+                return ResponseEntity.status(409).build(); // 409 Conflict
+            }
+            return ResponseEntity.status(400).build(); // 400 Bad Request
         }
-
-        return ResponseEntity.status(201).body(userResponse);
     }
 
     @Override
