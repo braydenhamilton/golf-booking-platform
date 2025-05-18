@@ -63,13 +63,14 @@ public class BookingService {
             try {
                 return wait.until(ExpectedConditions.elementToBeClickable(locator));
             } catch (TimeoutException e) {
-                LOGGER.error("Could not find finalise button with locator: " + locator);
-                continue;
+                LOGGER.debug("Could not find finalise button with locator: " + locator);
+                // Continue to next locator
             }
         }
-        throw new RuntimeException("Could not find finalise booking button");
+        // Return null instead of throwing an exception when button is not found
+        LOGGER.info("No finalise button found after trying all locators");
+        return null;
     }
-
     public WebElement findSubmitButton(WebDriver driver, WebDriverWait wait) {
         List<By> locators = Arrays.asList(
                 By.id("MainContent_ContinueButton"),

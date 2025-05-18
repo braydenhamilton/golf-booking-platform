@@ -155,6 +155,10 @@ public class BookingResource implements BookingApi {
     private WebDriver initialiseWebDriver() {
         WebDriverManager.chromedriver().setup();
         ChromeOptions options = new ChromeOptions();
+        options.addArguments("--disable-gpu");
+        options.addArguments("--headless");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
         return new ChromeDriver(options);
     }
 }
